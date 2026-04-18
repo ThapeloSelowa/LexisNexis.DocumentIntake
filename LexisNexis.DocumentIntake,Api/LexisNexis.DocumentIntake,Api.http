@@ -1,0 +1,6 @@
+@LexisNexis.DocumentIntake_Api_HostAddress = http://localhost:5161
+
+GET {{LexisNexis.DocumentIntake_Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
