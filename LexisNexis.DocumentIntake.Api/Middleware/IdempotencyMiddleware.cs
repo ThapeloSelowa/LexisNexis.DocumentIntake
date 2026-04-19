@@ -40,14 +40,23 @@ namespace LexisNexis.DocumentIntake_Api.Middleware
             var originalBody = ctx.Response.Body;
             await using var buffer = new MemoryStream();
             ctx.Response.Body = buffer;
+            var responseBody = string.Empty;
 
-            await next(ctx);
-
-            buffer.Seek(0, SeekOrigin.Begin);
-            var responseBody = await new StreamReader(buffer).ReadToEndAsync();
-            buffer.Seek(0, SeekOrigin.Begin);
-            await buffer.CopyToAsync(originalBody);
-            ctx.Response.Body = originalBody;
+            try
+            {
+                await next(ctx);
+            }
+            finally
+            {
+                // Always restore the original body stream, even when an exception propagates.
+                // Without this, ExceptionMiddleware writes the error JSON to the buffer
+                // which is never flushed to the client, resulting in an empty 500 body.
+                buffer.Seek(0, SeekOrigin.Begin);
+                responseBody = await new StreamReader(buffer).ReadToEndAsync();
+                buffer.Seek(0, SeekOrigin.Begin);
+                await buffer.CopyToAsync(originalBody);
+                ctx.Response.Body = originalBody;
+            }
 
             if (ctx.Response.StatusCode is >= 200 and < 300)
             {

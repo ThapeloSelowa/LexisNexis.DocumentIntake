@@ -35,7 +35,7 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Behaviours
 
                 logger.LogInformation(
                     "[{TransactionId}] <-- Completed {RequestName} in {ElapsedMs}ms",
-                    transactionId, requestName, sw.ElapsedMilliseconds);
+                 transactionId, requestName, sw.ElapsedMilliseconds);
 
                 return response;
             }

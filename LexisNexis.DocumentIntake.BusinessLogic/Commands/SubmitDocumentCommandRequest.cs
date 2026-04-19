@@ -25,7 +25,7 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Commands
         bool IsResubmission,
         string TransactionId);
 
-    internal class SubmitDocumentCommandValidator : AbstractValidator<SubmitDocumentCommandRequest>
+    public class SubmitDocumentCommandValidator : AbstractValidator<SubmitDocumentCommandRequest>
     {
         private static readonly string[] AllowedContentTypes =
         [

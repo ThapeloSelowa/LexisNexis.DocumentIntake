@@ -3,6 +3,7 @@ using LexisNexis.DocumentIntake.BusinessLogic.Domain;
 using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
 using LexisNexis.DocumentIntake.BusinessLogic.Models;
 using LexisNexis.DocumentIntake.BusinessLogic.Queries;
+using LexisNexis.DocumentIntake.Reporting;
 using LexisNexis.DocumentIntake_Api.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -27,7 +28,7 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
                 .WithTags("Documents")
                 .RequireRateLimiting("PerIpPolicy");
 
-            // ── POST /api/v1/documents ────────────────────────────────────────
+            // POST /api/v1/documents 
             group.MapPost("/", SubmitDocumentAsync)
                 .WithName("SubmitDocument")
                 .WithSummary("Submit a document for intake and processing")
@@ -52,7 +53,7 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
                 .Produces<ErrorResponse>(StatusCodes.Status429TooManyRequests)
                 .Produces<ErrorResponse>(StatusCodes.Status500InternalServerError);
 
-            // ── GET /api/v1/documents/{id} ────────────────────────────────────
+            // GET /api/v1/documents/{id}
             group.MapGet("/{id}", GetDocumentAsync)
                 .WithName("GetDocument")
                 .WithSummary("Retrieve document metadata and audit trail")
@@ -60,7 +61,7 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
                 .Produces<ErrorResponse>(StatusCodes.Status404NotFound)
                 .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
 
-            // ── GET /api/v1/documents/{id}/status ────────────────────────────
+            // GET /api/v1/documents/{id}/status
             group.MapGet("/{id}/status", GetStatusAsync)
                 .WithName("GetDocumentStatus")
                 .WithSummary("Get processing status and generated preview")
@@ -74,7 +75,7 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
                 .Produces<ErrorResponse>(StatusCodes.Status404NotFound)
                 .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
 
-            // ── GET /api/v1/documents/{id}/content ───────────────────────────
+            // GET /api/v1/documents/{id}/content 
             group.MapGet("/{id}/content", DownloadContentAsync)
                 .WithName("DownloadDocumentContent")
                 .WithSummary("Download the raw document file")
@@ -82,12 +83,29 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
                 .Produces<ErrorResponse>(StatusCodes.Status404NotFound)
                 .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
 
-            // ── GET /api/v1/documents ─────────────────────────────────────────
+            // GET /api/v1/documents 
             group.MapGet("/", ListDocumentsAsync)
                 .WithName("ListDocuments")
                 .WithSummary("List documents with optional filters")
                 .Produces<IReadOnlyList<DocumentDto>>(StatusCodes.Status200OK)
                 .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
+
+            var reportGroup = app.MapGroup("/api/v1/reports")
+    .WithTags("Reports")
+    .RequireRateLimiting("PerIpPolicy");
+
+            reportGroup.MapGet("/", async (
+                [FromQuery] DateTimeOffset? from,
+                [FromQuery] DateTimeOffset? to,
+                ReportingService reporting,
+                CancellationToken ct) =>
+            {
+                var report = await reporting.GenerateAsync(from, to, ct);
+                return Results.Ok(report);
+            })
+            .WithName("GetDocumentReport")
+            .WithSummary("Generate a business report on document intake activity")
+            .Produces<DocumentReport>(StatusCodes.Status200OK);
         }
 
         // Handlers 
