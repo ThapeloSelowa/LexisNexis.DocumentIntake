@@ -1,6 +1,4 @@
 ﻿using Amazon.SQS;
-using Amazon.SimpleNotificationService.Model;
-using Amazon.SQS;
 using Amazon.SQS.Model;
 using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
 using LexisNexis.DocumentIntake.BusinessLogic.Models;

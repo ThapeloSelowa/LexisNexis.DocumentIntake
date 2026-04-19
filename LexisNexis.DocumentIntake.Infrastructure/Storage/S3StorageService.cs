@@ -1,13 +1,12 @@
 ﻿using Amazon.S3;
+using Amazon.S3.Model;
 using LexisNexis.DocumentIntake.BusinessLogic.Domain;
 using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
+using LexisNexis.DocumentIntake.Infrastructure.Resilience;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
+using Polly;
 using System.Net;
-using System.Reflection.Metadata;
-using System.Text;
 
 namespace LexisNexis.DocumentIntake.Infrastructure.Storage
 {
