@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LexisNexis.DocumentIntake.BusinessLogic.Models;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
