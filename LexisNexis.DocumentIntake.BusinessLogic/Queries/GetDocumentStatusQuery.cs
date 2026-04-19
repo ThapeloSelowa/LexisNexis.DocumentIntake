@@ -20,10 +20,10 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Queries
         DateTimeOffset? UpdatedAt);
 
     public class GetDocumentStatusQueryHandler(IDocumentRepository repo)
-        : IRequestHandler<GetDocumentStatusQueryHandler, DocumentStatusDto?>
+        : IRequestHandler<GetDocumentStatusQuery, DocumentStatusDto?>
     {
         public async Task<DocumentStatusDto?> Handle(
-            GetDocumentStatusQueryHandler query, CancellationToken ct)
+            GetDocumentStatusQuery query, CancellationToken ct)
         {
             var doc = await repo.FindByIdAsync(query.DocumentId, ct);
             if (doc is null) return null;
