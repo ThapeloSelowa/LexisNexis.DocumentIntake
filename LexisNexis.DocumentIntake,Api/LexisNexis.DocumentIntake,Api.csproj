@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Http" Version="8.1.1" />
+    <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
     <PackageReference Include="AWS.Logger.SeriLog" Version="4.0.2" />
     <PackageReference Include="AWSSDK.CloudWatch" Version="4.0.9.4" />
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.33" />
@@ -21,8 +22,18 @@
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.2" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LexisNexis.DocumentIntake.BusinessLogic\LexisNexis.DocumentIntake.BusinessLogic.csproj" />
+    <ProjectReference Include="..\LexisNexis.DocumentIntake.Infrastructure\LexisNexis.DocumentIntake.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
