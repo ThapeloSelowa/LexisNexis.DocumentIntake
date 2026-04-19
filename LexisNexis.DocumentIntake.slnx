@@ -1,5 +1,7 @@
 <Solution>
-  <Project Path="LexisNexis.DocumentIntake,Api/LexisNexis.DocumentIntake,Api.csproj" />
+  <Project Path="LexisNexis.DocumentIntake,Api/LexisNexis.DocumentIntake,Api.csproj">
+    <Build Solution="Debug|*" Project="false" />
+  </Project>
   <Project Path="LexisNexis.DocumentIntake.BusinessLogic/LexisNexis.DocumentIntake.BusinessLogic.csproj" />
   <Project Path="LexisNexis.DocumentIntake.Infrastructure/LexisNexis.DocumentIntake.Infrastructure.csproj" />
   <Project Path="LexisNexis.DocumentIntake.Reporting/LexisNexis.DocumentIntake.Reporting.csproj" />
