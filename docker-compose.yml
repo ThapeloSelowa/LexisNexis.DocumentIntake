@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: document-intake-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEFAULT_REGION=us-east-1
+      - AWS_DEFAULT_REGION=us-east-1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: src/LexisNexis.DocumentIntake.Api/Dockerfile
+    container_name: document-intake-api
+    ports:
+      - "5000:8080"
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - AWS__ServiceURL=http://localstack:4566
+      - AWS__BucketName=documents-local
+      - AWS__Region=us-east-1
+      - AWS__ForcePathStyle=true
+      - Security__ApiKey=dev-api-key-change-in-prod
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
