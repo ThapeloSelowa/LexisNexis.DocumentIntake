@@ -50,8 +50,6 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Commands
                 logger.LogInformation(
                     "[{TransactionId}] Resubmission detected. DocumentId: {DocumentId}, Count: {Count}",
                     transactionId, document.Id, document.SubmissionCount);
-
-                await metrics.IncrementAsync("DocumentResubmitted", ct);
             }
 
             // Step 2: Upload to S3 
