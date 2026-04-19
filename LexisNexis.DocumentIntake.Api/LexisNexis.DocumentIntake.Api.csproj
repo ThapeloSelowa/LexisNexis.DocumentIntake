@@ -1,10 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>LexisNexis.DocumentIntake.Api</AssemblyName>
     <RootNamespace>LexisNexis.DocumentIntake_Api</RootNamespace>
+    <UserSecretsId>5d575e94-df0d-464a-b347-c3da80c453fe</UserSecretsId>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,12 +18,14 @@
     <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.33" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.21.2" />
     <PackageReference Include="AWSSDK.SQS" Version="4.0.2.25" />
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.HealthChecks" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.6" />
     <PackageReference Include="Microsoft.Extensions.Resilience" Version="10.5.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.15.2" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.2" />
     <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.1" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageReference Include="Serilog.Formatting.Compact" Version="3.0.0" />
@@ -28,12 +33,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\LexisNexis.DocumentIntake.BusinessLogic\LexisNexis.DocumentIntake.BusinessLogic.csproj" />
     <ProjectReference Include="..\LexisNexis.DocumentIntake.Infrastructure\LexisNexis.DocumentIntake.Infrastructure.csproj" />
+    <ProjectReference Include="..\LexisNexis.DocumentIntake.Reporting\LexisNexis.DocumentIntake.Reporting.csproj" />
   </ItemGroup>
 
 </Project>
