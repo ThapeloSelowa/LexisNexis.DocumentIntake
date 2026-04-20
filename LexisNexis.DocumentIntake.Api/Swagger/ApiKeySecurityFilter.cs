@@ -1,4 +1,4 @@
-using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace LexisNexis.DocumentIntake_Api.Swagger;
@@ -12,8 +12,6 @@ public class ApiKeySecurityFilter : IDocumentFilter
     public void Apply(OpenApiDocument document, DocumentFilterContext context)
     {
         document.Components ??= new OpenApiComponents();
-        document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-
         document.Components.SecuritySchemes["ApiKey"] = new OpenApiSecurityScheme
         {
             Type = SecuritySchemeType.ApiKey,
@@ -22,24 +20,25 @@ public class ApiKeySecurityFilter : IDocumentFilter
             Description = "API key — in development use: dev-api-key-change-in-prod"
         };
 
-        // OpenApiSecuritySchemeReference requires the document so the reference can resolve.
-        // Without it the serializer emits {} instead of {"ApiKey": []}.
-        var apiKeyRef = new OpenApiSecuritySchemeReference("ApiKey", document);
-        var requirement = new OpenApiSecurityRequirement { { apiKeyRef, [] } };
+        var securityRef = new OpenApiSecurityScheme
+        {
+            Reference = new OpenApiReference
+            {
+                Type = ReferenceType.SecurityScheme,
+                Id = "ApiKey"
+            }
+        };
 
-        // Global security — Swagger UI sends X-Api-Key on every request once Authorized
-        document.Security ??= [];
-        document.Security.Add(requirement);
+        var requirement = new OpenApiSecurityRequirement { { securityRef, [] } };
 
-        // Per-operation security — belt-and-suspenders for Swagger UI compatibility
+        document.SecurityRequirements ??= new List<OpenApiSecurityRequirement>();
+        document.SecurityRequirements.Add(requirement);
+
         foreach (var path in document.Paths.Values)
             foreach (var operation in path.Operations.Values)
             {
-                operation.Security ??= [];
-                operation.Security.Add(new OpenApiSecurityRequirement
-                {
-                    { new OpenApiSecuritySchemeReference("ApiKey", document), [] }
-                });
+                operation.Security ??= new List<OpenApiSecurityRequirement>();
+                operation.Security.Add(requirement);
             }
     }
 }

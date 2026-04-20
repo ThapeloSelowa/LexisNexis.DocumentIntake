@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
+﻿namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
 {
     public enum AuditEvent
     {
@@ -16,7 +12,7 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
     }
 
     /// <summary>
-    /// An immutable record of something that happened to a document.
+    /// A record of something that happened to a document.
     /// DateTimeOffset (not DateTime) is used to preserve UTC offset information.
     /// This matters when logs come from servers in different time zones.
     /// </summary>
@@ -27,10 +23,7 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
         public string? Detail { get; init; }
         public string? CorrelationId { get; init; }
 
-        public static AuditEntry Create(
-            AuditEvent auditEvent,
-            string? detail = null,
-            string? correlationId = null) =>
+        public static AuditEntry Create(AuditEvent auditEvent,string? detail = null,string? correlationId = null) =>
             new()
             {
                 Event = auditEvent,

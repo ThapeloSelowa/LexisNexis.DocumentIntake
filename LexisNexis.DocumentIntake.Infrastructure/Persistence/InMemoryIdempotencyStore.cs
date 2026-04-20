@@ -9,8 +9,19 @@ public class InMemoryIdempotencyStore : IIdempotencyStore
 
     public Task<IdempotencyEntry?> GetAsync(string key, CancellationToken ct = default)
     {
-        _store.TryGetValue(key, out var entry);
-        return Task.FromResult(entry);
+        if (!_store.TryGetValue(key, out var entry))
+        {
+            return Task.FromResult<IdempotencyEntry?>(null);
+        }
+
+
+        if (entry.CreatedAt.AddHours(24) < DateTimeOffset.UtcNow)
+        {
+            _store.TryRemove(key, out _);
+            return Task.FromResult<IdempotencyEntry?>(null);
+        }
+
+        return Task.FromResult<IdempotencyEntry?>(entry);
     }
 
     public Task SetAsync(string key, IdempotencyEntry entry, CancellationToken ct = default)

@@ -1,4 +1,6 @@
-﻿using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
+﻿using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Spreadsheet;
+using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
 using LexisNexis.DocumentIntake.BusinessLogic.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -7,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using UglyToad.PdfPig;
 
 namespace LexisNexis.DocumentIntake.Infrastructure.Workers
 {
@@ -36,6 +39,9 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
 
         private readonly int _workerDelayMs =
             int.TryParse(config["Processing:WorkerDelayMs"], out var delayMs) ? delayMs : 500;
+
+        private readonly int _maxRetryAttempts =
+            int.TryParse(config["Processing:MaxRetryAttempts"], out var maxRetry) ? maxRetry : 3;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -124,12 +130,38 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
             }
             catch (Exception ex)
             {
+                if (message.RetryCount < _maxRetryAttempts)
+                {
+                    var nextAttempt = message.RetryCount + 1;
+                    logger.LogWarning(ex,
+                        "Document {DocumentId} processing failed (attempt {Attempt}/{Max}) — re-queuing for retry.",
+                        message.DocumentId, nextAttempt, _maxRetryAttempts);
+
+                    try
+                    {
+                        var document = await repo.FindByIdAsync(message.DocumentId, ct);
+                        if (document is not null)
+                        {
+                            document.MarkAsQueued(message.TransactionId);
+                            await repo.UpsertAsync(document, document.Version, ct);
+                        }
+                    }
+                    catch (Exception innerEx)
+                    {
+                        logger.LogError(innerEx,
+                            "Could not reset status for retry on document {DocumentId}", message.DocumentId);
+                    }
+
+                    await queue.EnqueueAsync(message with { RetryCount = nextAttempt }, ct);
+                    return;
+                }
+
                 logger.LogError(ex,
-                    "Failed to process document {DocumentId}", message.DocumentId);
+                    "Document {DocumentId} failed after {Max} attempts — sending to dead letter.",
+                    message.DocumentId, _maxRetryAttempts);
 
                 await metrics.IncrementAsync("ProcessingFailed", ct);
 
-                // Attempt to mark document as failed
                 try
                 {
                     var document = await repo.FindByIdAsync(message.DocumentId, ct);
@@ -142,11 +174,9 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
                 catch (Exception innerEx)
                 {
                     logger.LogError(innerEx,
-                        "Could not update failed status for document {DocumentId}",
-                        message.DocumentId);
+                        "Could not update failed status for document {DocumentId}", message.DocumentId);
                 }
 
-                // Send to dead letter queue for investigation
                 deadLetter.Enqueue(message, ex);
             }
         }
@@ -154,7 +184,6 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
         private async Task<string> GeneratePreviewAsync(
             Stream stream, string contentType, CancellationToken ct)
         {
-            // Text-based types — read directly
             if (contentType.StartsWith("text/") ||
                 contentType is "application/json" or "application/xml"
                               or "application/csv" or "application/xhtml+xml")
@@ -166,49 +195,91 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
                     : content[.._maxPreviewLength] + "...";
             }
 
-            // Binary types (PDF, DOCX, etc.) — scan bytes for readable text runs
-            var bytes = new byte[stream.Length];
-            _ = await stream.ReadAsync(bytes, ct);
-            var extracted = ExtractReadableText(bytes, _maxPreviewLength);
-            return extracted.Length > 0
-                ? extracted
-                : $"[{contentType}] No readable text could be extracted from this document.";
+            // CopyToAsync handles non-seekable network streams (e.g. S3 response stream)
+            // where stream.Length is unavailable and ReadAsync may return partial data.
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms, ct);
+            var bytes = ms.ToArray();
+
+            var text = contentType switch
+            {
+                "application/pdf" => ExtractPdfText(bytes),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => ExtractDocxText(bytes),
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" => ExtractXlsxText(bytes),
+                _ => string.Empty
+            };
+
+            if (text.Length > 0)
+                return text.Length <= _maxPreviewLength ? text : text[.._maxPreviewLength] + "...";
+
+            return $"[{contentType}] No readable text could be extracted from this document.";
         }
 
-        // Scans raw bytes for consecutive printable-ASCII runs (length ≥ 4).
-        // Effective for PDFs (text objects are ASCII-encoded inside the binary)
-        // and any other format that embeds plain text in a binary wrapper.
-        private static string ExtractReadableText(byte[] bytes, int maxLength)
+        private static string ExtractPdfText(byte[] bytes)
         {
-            var result = new System.Text.StringBuilder();
-            var run   = new System.Text.StringBuilder();
-
-            foreach (var b in bytes)
+            try
             {
-                if (b >= 32 && b < 127)
-                {
-                    run.Append((char)b);
-                }
-                else
-                {
-                    if (run.Length >= 4)
+                using var pdf = PdfDocument.Open(bytes);
+                var sb = new StringBuilder();
+                foreach (var page in pdf.GetPages())
+                    foreach (var word in page.GetWords())
                     {
-                        if (result.Length > 0) result.Append(' ');
-                        result.Append(run);
-                        if (result.Length >= maxLength) break;
+                        if (sb.Length > 0) sb.Append(' ');
+                        sb.Append(word.Text);
                     }
-                    run.Clear();
-                }
+                return sb.ToString().Trim();
             }
+            catch { return string.Empty; }
+        }
 
-            if (run.Length >= 4 && result.Length < maxLength)
+        private static string ExtractDocxText(byte[] bytes)
+        {
+            try
             {
-                if (result.Length > 0) result.Append(' ');
-                result.Append(run);
+                using var ms = new MemoryStream(bytes);
+                using var doc = WordprocessingDocument.Open(ms, false);
+                var body = doc.MainDocumentPart?.Document?.Body;
+                if (body is null) return string.Empty;
+                return string.Join(" ", body.Descendants<DocumentFormat.OpenXml.Wordprocessing.Text>()
+                    .Select(t => t.Text)
+                    .Where(t => !string.IsNullOrWhiteSpace(t)))
+                    .Trim();
             }
+            catch { return string.Empty; }
+        }
 
-            var text = result.ToString().Trim();
-            return text.Length <= maxLength ? text : text[..maxLength] + "...";
+        private static string ExtractXlsxText(byte[] bytes)
+        {
+            try
+            {
+                using var ms = new MemoryStream(bytes);
+                using var doc = SpreadsheetDocument.Open(ms, false);
+                var workbook = doc.WorkbookPart;
+                if (workbook is null) return string.Empty;
+
+                var sharedStrings = workbook.SharedStringTablePart?.SharedStringTable
+                    .Elements<SharedStringItem>()
+                    .Select(s => s.InnerText)
+                    .ToArray() ?? [];
+
+                var sb = new StringBuilder();
+                foreach (var sheet in workbook.WorksheetParts)
+                    foreach (var cell in sheet.Worksheet.Descendants<Cell>())
+                    {
+                        var value = cell.DataType?.Value == CellValues.SharedString
+                            && int.TryParse(cell.CellValue?.Text, out var idx)
+                            ? sharedStrings[idx]
+                            : cell.CellValue?.Text ?? string.Empty;
+
+                        if (!string.IsNullOrWhiteSpace(value))
+                        {
+                            if (sb.Length > 0) sb.Append(' ');
+                            sb.Append(value);
+                        }
+                    }
+                return sb.ToString().Trim();
+            }
+            catch { return string.Empty; }
         }
     }
 }

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
+﻿namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
 {
     /// <summary>
     /// The deduplication key is a combination of the upstream provider name

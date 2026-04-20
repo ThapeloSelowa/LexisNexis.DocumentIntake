@@ -1,8 +1,5 @@
 ﻿using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
 using LexisNexis.DocumentIntake.BusinessLogic.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Channels;
 
 namespace LexisNexis.DocumentIntake.Infrastructure.Queue

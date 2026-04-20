@@ -1,9 +1,7 @@
 ﻿using FluentValidation;
 using LexisNexis.DocumentIntake.BusinessLogic.Domain;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Text;
+
 
 namespace LexisNexis.DocumentIntake.BusinessLogic.Commands
 {
@@ -20,10 +18,7 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Commands
         public string? CorrelationId { get; init; }
     }
 
-    public record SubmitDocumentResult(
-        DocumentId DocumentId,
-        bool IsResubmission,
-        string TransactionId);
+    public record SubmitDocumentResult(DocumentId DocumentId,bool IsResubmission,string TransactionId);
 
     public class SubmitDocumentCommandValidator : AbstractValidator<SubmitDocumentCommandRequest>
     {

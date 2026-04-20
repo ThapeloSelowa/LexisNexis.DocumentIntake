@@ -1,15 +1,11 @@
 ﻿using LexisNexis.DocumentIntake.BusinessLogic.Domain;
 using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LexisNexis.DocumentIntake.Infrastructure.Audit
 {
     /// <summary>
-    /// Audit service that logs entries both to the structured log (CloudWatch)
-    /// and to the in-memory document record.
+    /// Audit service that logs entries both to the structured log (CloudWatch) and to the in-memory document record.
     /// </summary>
     public class AuditService(IDocumentRepository repo, ILogger<AuditService> logger) : IAuditService
     {

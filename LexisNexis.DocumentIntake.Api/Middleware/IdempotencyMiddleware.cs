@@ -4,67 +4,52 @@ namespace LexisNexis.DocumentIntake_Api.Middleware
 {
     /// <summary>
     /// Prevents duplicate processing of identical POST requests.
-    ///
-    /// Problem it solves: If an upstream provider sends a request, the network times out,
-    /// and they retry — without idempotency the document would be submitted twice even
-    /// though the deduplication key would catch it. With idempotency, we return the
-    /// exact same response as the first call without re-running any logic.
-    ///
-    /// The caller must send an "Idempotency-Key" header (a UUID they generate).
-    /// Responses are cached for 24 hours.
+    /// The caller must include an "Idempotency-Key" header (a UUID they generate).
+    /// Cached responses are replayed for 24 hours; requests without the header pass through unchanged.
     /// </summary>
-    public class IdempotencyMiddleware(RequestDelegate next,IIdempotencyStore store)
+    public class IdempotencyMiddleware(RequestDelegate next, IIdempotencyStore store)
     {
-        public async Task InvokeAsync(HttpContext ctx)
+        public async Task InvokeAsync(HttpContext httpContext)
         {
-            if (!ctx.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase))
+            if (!httpContext.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase)
+                || !httpContext.Request.Headers.TryGetValue("Idempotency-Key", out var key))
             {
-                await next(ctx); return;
+                await next(httpContext); return;
             }
 
-            if (!ctx.Request.Headers.TryGetValue("Idempotency-Key", out var key))
-            {
-                await next(ctx); return;
-            }
-
-            var cached = await store.GetAsync(key!);
+            var cached = await store.GetAsync(key.ToString());
             if (cached is not null)
             {
-                ctx.Response.StatusCode = cached.StatusCode;
-                ctx.Response.Headers["X-Idempotent-Replayed"] = "true";
-                ctx.Response.ContentType = "application/json; charset=utf-8";
-                await ctx.Response.WriteAsync(cached.Body);  // write raw JSON, not re-serialized
+                httpContext.Response.StatusCode = cached.StatusCode;
+                httpContext.Response.Headers["X-Idempotent-Replayed"] = "true";
+                httpContext.Response.ContentType = "application/json; charset=utf-8";
+                await httpContext.Response.WriteAsync(cached.Body);
                 return;
             }
 
-            // Capture the response so we can cache it
-            var originalBody = ctx.Response.Body;
+            var originalBody = httpContext.Response.Body;
             await using var buffer = new MemoryStream();
-            ctx.Response.Body = buffer;
+            httpContext.Response.Body = buffer;
             var responseBody = string.Empty;
 
             try
             {
-                await next(ctx);
+                await next(httpContext);
             }
             finally
             {
-                // Always restore the original body stream, even when an exception propagates.
-                // Without this, ExceptionMiddleware writes the error JSON to the buffer
-                // which is never flushed to the client, resulting in an empty 500 body.
+                // Restore the original stream so ExceptionMiddleware can write error bodies correctly.
                 buffer.Seek(0, SeekOrigin.Begin);
                 responseBody = await new StreamReader(buffer).ReadToEndAsync();
                 buffer.Seek(0, SeekOrigin.Begin);
                 await buffer.CopyToAsync(originalBody);
-                ctx.Response.Body = originalBody;
+                httpContext.Response.Body = originalBody;
             }
 
-            if (ctx.Response.StatusCode is >= 200 and < 300)
+            if (httpContext.Response.StatusCode is >= 200 and < 300)
             {
-                await store.SetAsync(key!, new IdempotencyEntry(
-                    ctx.Response.StatusCode,
-                    responseBody,
-                    DateTimeOffset.UtcNow));
+                await store.SetAsync(key.ToString(), new IdempotencyEntry(
+                httpContext.Response.StatusCode, responseBody, DateTimeOffset.UtcNow));
             }
         }
     }

@@ -8,51 +8,44 @@ namespace LexisNexis.DocumentIntake_Api.Middleware
 {
     /// <summary>
     /// Central exception handler for all unhandled exceptions.
-    ///
-    /// Every request gets a server-generated TransactionId (never trusted from caller).
+    /// Every request gets a server-generated TransactionId
     /// This ID is:
     /// - Added to all log entries via a logging scope
     /// - Returned in the response header X-Transaction-Id
     /// - Returned in the response body so the caller can report it for investigation
-    ///
-    /// When an error occurs in production, the operations team can grep CloudWatch
-    /// logs by TransactionId to see the full request lifecycle instantly.
+    /// When an error occurs, the development team can use the TransactionId to see the full request lifecycle instantly on the logs.
     /// </summary>
-    public class ExceptionMiddleware(
-        RequestDelegate next,
-        ILogger<ExceptionMiddleware> logger,
-        IMetricsService metrics)
+    public class ExceptionMiddleware(RequestDelegate next,ILogger<ExceptionMiddleware> logger,IMetricsService metrics)
     {
-        public async Task InvokeAsync(HttpContext ctx)
+        public async Task InvokeAsync(HttpContext httpContext)
         {
-            // Generate server-side transaction ID — NEVER trust one from the caller
             var transactionId = Guid.NewGuid().ToString("N");
 
-            ctx.Items["TransactionId"] = transactionId;
-            ctx.Response.Headers["X-Transaction-Id"] = transactionId;
+            httpContext.Items["TransactionId"] = transactionId;
+            httpContext.Response.Headers["X-Transaction-Id"] = transactionId;
 
             using var scope = logger.BeginScope(new Dictionary<string, object>
             {
                 ["TransactionId"] = transactionId,
-                ["ClientIp"] = ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-                ["Method"] = ctx.Request.Method,
-                ["Path"] = ctx.Request.Path.ToString()
+                ["ClientIp"] = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                ["Method"] = httpContext.Request.Method,
+                ["Path"] = httpContext.Request.Path.ToString()
             });
 
             try
             {
-                await next(ctx);
+                await next(httpContext);
             }
             catch (ValidationException ex)
             {
                 logger.LogWarning(
                     "[{TransactionId}] Validation failed on {Path}: {Errors}",
                     transactionId,
-                    ctx.Request.Path,
+                    httpContext.Request.Path,
                     string.Join("; ", ex.Errors.Select(e => e.ErrorMessage)));
 
-                ctx.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
-                await ctx.Response.WriteAsJsonAsync(new ErrorResponse
+                httpContext.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
+                await httpContext.Response.WriteAsJsonAsync(new ErrorResponse
                 {
                     TransactionId = transactionId,
                     Status = 422,
@@ -66,8 +59,8 @@ namespace LexisNexis.DocumentIntake_Api.Middleware
                 logger.LogWarning(ex,
                     "[{TransactionId}] Concurrency conflict: {Message}", transactionId, ex.Message);
 
-                ctx.Response.StatusCode = StatusCodes.Status409Conflict;
-                await ctx.Response.WriteAsJsonAsync(new ErrorResponse
+                httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
+                await httpContext.Response.WriteAsJsonAsync(new ErrorResponse
                 {
                     TransactionId = transactionId,
                     Status = 409,
@@ -79,12 +72,12 @@ namespace LexisNexis.DocumentIntake_Api.Middleware
             {
                 logger.LogError(ex,
                     "[{TransactionId}] Unhandled exception on {Method} {Path}",
-                    transactionId, ctx.Request.Method, ctx.Request.Path);
+                    transactionId, httpContext.Request.Method, httpContext.Request.Path);
 
                 await metrics.IncrementAsync("UnhandledExceptions");
 
-                ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                await ctx.Response.WriteAsJsonAsync(new ErrorResponse
+                httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                await httpContext.Response.WriteAsJsonAsync(new ErrorResponse
                 {
                     TransactionId = transactionId,
                     Status = 500,
