@@ -109,18 +109,28 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
         }
 
         // Handlers 
-        private static async Task<IResult> SubmitDocumentAsync(HttpRequest httpRequest,IMediator mediator,
-                                           FileContentValidator contentValidator,CancellationToken ct)
+        private static async Task<IResult> SubmitDocumentAsync(HttpRequest httpRequest, IMediator mediator,
+                                           FileContentValidator contentValidator, CancellationToken ct)
         {
             IFormCollection form;
-            try { form = await httpRequest.ReadFormAsync(ct); }
-            catch { return Results.BadRequest(new ErrorResponse { TransactionId = httpRequest.HttpContext.Items["TransactionId"]?.ToString() ?? Guid.NewGuid().ToString("N"), Status = 400, Title = "Bad Request", Detail = "Invalid or empty multipart form data." }); }
+            try
+            { 
+                form = await httpRequest.ReadFormAsync(ct);
+            }
+            catch
+            {
+                return Results.BadRequest(new ErrorResponse { 
+                    TransactionId = httpRequest.HttpContext.Items["TransactionId"]?.ToString() ?? Guid.NewGuid().ToString("N"),
+                    Status = 400, Title = "Bad Request",
+                    Detail = "Invalid or empty multipart form data." });
+            }
 
             // Swagger UI sends the field as "fileContent" (model property name);
             // curl/code clients typically use "file". Accept both.
             var file = form.Files.GetFile("file") ?? form.Files.GetFile("fileContent");
 
             if (file is null)
+            {
                 return Results.BadRequest(new ErrorResponse
                 {
                     TransactionId = httpRequest.HttpContext.Items["TransactionId"]?.ToString()
@@ -129,6 +139,7 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
                     Title = "Bad Request",
                     Detail = "No file was included in the request."
                 });
+            }
 
             var contentType = form["contentType"].ToString();
 
@@ -162,7 +173,7 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
                 result.DocumentId.ToString(),
                 result.IsResubmission,
                 result.TransactionId,
-                "Document accepted. Processing has been queued."));
+               "Document accepted. Processing has been queued."));
         }
 
         private static async Task<IResult> GetDocumentAsync(string id, IMediator mediator, CancellationToken ct)
@@ -193,9 +204,9 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
                 entityTag: new EntityTagHeaderValue($"\"{doc.ETag}\""));
         }
 
-        private static async Task<IResult> ListDocumentsAsync([FromQuery] string? provider,[FromQuery] string? tag,
-                                           [FromQuery] string? status,[FromQuery] int page = 1,
-                                           [FromQuery] int pageSize = 20,IDocumentRepository repo = null!,
+        private static async Task<IResult> ListDocumentsAsync([FromQuery] string? provider, [FromQuery] string? tag,
+                                           [FromQuery] string? status, [FromQuery] int page = 1,
+                                           [FromQuery] int pageSize = 20, IDocumentRepository repo = null!,
                                            CancellationToken ct = default)
         {
             ProcessingStatus? parsedStatus = Enum.TryParse<ProcessingStatus>(status, out var s) ? s : null;
@@ -209,7 +220,7 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
 
     // Response DTOs for Swagger documentation
     public record SubmitDocumentResponseDto(
-        
+
     [property: Description("Internal document ID assigned by this service")]
     string DocumentId,
 

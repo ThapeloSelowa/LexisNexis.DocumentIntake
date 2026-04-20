@@ -1,9 +1,8 @@
-﻿using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
+﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace LexisNexis.DocumentIntake_Api.HealthChecks
 {
-    public class QueueHealthCheck(IQueueService queue) : IHealthCheck
+    public class QueueHealthCheck : IHealthCheck
     {
         public Task<HealthCheckResult> CheckHealthAsync(
             HealthCheckContext context, CancellationToken ct = default) =>

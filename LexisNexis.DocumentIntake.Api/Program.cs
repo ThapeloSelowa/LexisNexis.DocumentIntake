@@ -23,7 +23,7 @@ using LexisNexis.DocumentIntake_Api.Validation;
 using MediatR;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -173,7 +173,7 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
-        options.SwaggerDoc("v1", new Microsoft.OpenApi.OpenApiInfo
+        options.SwaggerDoc("v1", new OpenApiInfo
         {
             Title = "Document Intake API",
             Version = "v1",
@@ -217,51 +217,6 @@ try
 
     if (app.Environment.IsDevelopment())
     {
-        // Patch swagger.json security: OpenApiSecuritySchemeReference serializes as {} in
-        // Microsoft.OpenApi 2.x; replace every empty security object with {"ApiKey": []}
-        app.Use(async (ctx, next) =>
-        {
-            if (ctx.Request.Path == "/swagger/v1/swagger.json")
-            {
-                var originalBody = ctx.Response.Body;
-                using var buffer = new MemoryStream();
-                ctx.Response.Body = buffer;
-                try { await next(ctx); } finally { ctx.Response.Body = originalBody; }
-
-                buffer.Seek(0, SeekOrigin.Begin);
-                var json = await new StreamReader(buffer).ReadToEndAsync();
-                var node = System.Text.Json.Nodes.JsonNode.Parse(json)!;
-
-                System.Text.Json.Nodes.JsonObject MakeApiKeyReq() =>
-                    new() { ["ApiKey"] = new System.Text.Json.Nodes.JsonArray() };
-
-                void PatchSecurityArray(System.Text.Json.Nodes.JsonArray? arr)
-                {
-                    if (arr is null) return;
-                    for (var i = 0; i < arr.Count; i++)
-                        if (arr[i] is System.Text.Json.Nodes.JsonObject o && o.Count == 0)
-                            arr[i] = MakeApiKeyReq();
-                }
-
-                PatchSecurityArray(node["security"]?.AsArray());
-
-                if (node["paths"] is System.Text.Json.Nodes.JsonObject paths)
-                    foreach (var path in paths)
-                        if (path.Value is System.Text.Json.Nodes.JsonObject pathItem)
-                            foreach (var op in pathItem)
-                                if (op.Value is System.Text.Json.Nodes.JsonObject operation)
-                                    PatchSecurityArray(operation["security"]?.AsArray());
-
-                var bytes = System.Text.Encoding.UTF8.GetBytes(node.ToJsonString());
-                ctx.Response.ContentLength = bytes.Length;
-                await ctx.Response.Body.WriteAsync(bytes);
-            }
-            else
-            {
-                await next(ctx);
-            }
-        });
-
         app.UseSwagger();
         app.UseSwaggerUI(c =>
         {
