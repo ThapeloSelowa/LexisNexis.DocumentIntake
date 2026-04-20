@@ -32,7 +32,8 @@ namespace LexisNexis.DocumentIntake_Api.Middleware
             {
                 ctx.Response.StatusCode = cached.StatusCode;
                 ctx.Response.Headers["X-Idempotent-Replayed"] = "true";
-                await ctx.Response.WriteAsJsonAsync(cached.Body);
+                ctx.Response.ContentType = "application/json; charset=utf-8";
+                await ctx.Response.WriteAsync(cached.Body);  // write raw JSON, not re-serialized
                 return;
             }
 

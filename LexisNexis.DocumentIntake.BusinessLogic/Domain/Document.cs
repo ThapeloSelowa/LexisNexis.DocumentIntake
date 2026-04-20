@@ -84,6 +84,10 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
         /// </summary>
         public void RecordResubmission(string? correlationId = null)
         {
+            // Reset to Received so the new file goes through the full pipeline again.
+            // Skip transition if already Received (immediate resubmission before first upload completed).
+            if (Status != ProcessingStatus.Received)
+                TransitionTo(ProcessingStatus.Received);
             SubmissionCount++;
             UpdatedAt = DateTimeOffset.UtcNow;
             _auditTrail.Add(AuditEntry.Create(AuditEvent.Resubmitted,

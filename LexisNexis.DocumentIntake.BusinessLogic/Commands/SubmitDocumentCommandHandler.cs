@@ -64,12 +64,14 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Commands
             document.MarkAsStored(storageKey, transactionId);
 
             // Step 3: Persist as Stored
-            await repo.UpsertAsync(document, document.Version - 1, ct);
+            // Pass document.Version (not Version-1) because the in-memory repo stores a reference —
+            // existing.Version IS document.Version, so Version-1 always fails the concurrency check.
+            await repo.UpsertAsync(document, document.Version, ct);
 
             // Step 4: Advance to Queued and persist before enqueuing,
             // so the worker cannot race with this handler's writes.
             document.MarkAsQueued(transactionId);
-            await repo.UpsertAsync(document, document.Version - 1, ct);
+            await repo.UpsertAsync(document, document.Version, ct);
 
             // Step 5: Enqueue last — document is fully up-to-date in the store
             await queue.EnqueueAsync(new ProcessingMessage

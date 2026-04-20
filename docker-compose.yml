@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   localstack:
     image: localstack/localstack:3.0
@@ -20,7 +18,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: src/DocumentIntake.API/Dockerfile
+      dockerfile: LexisNexis.DocumentIntake.Api/Dockerfile
     container_name: document-intake-api
     ports:
       - "5000:8080"
@@ -32,6 +30,7 @@ services:
       - AWS__ServiceURL=http://localstack:4566
       - AWS__BucketName=documents-local
       - AWS__Region=us-east-1
+      - AWS__ForcePathStyle=true
       - Security__ApiKey=dev-api-key-change-in-prod
     volumes:
       - ./logs:/app/logs

@@ -99,7 +99,7 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
 
                 // ── Mark as in-progress ───────────────────────────────────────
                 document.MarkAsProcessing(message.TransactionId);
-                await repo.UpsertAsync(document, document.Version - 1, ct);
+                await repo.UpsertAsync(document, document.Version, ct);
 
                 // ── Download from S3 ──────────────────────────────────────────
                 if (document.StorageKey is null)
@@ -112,7 +112,7 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
 
                 // ── Mark as processed ─────────────────────────────────────────
                 document.MarkAsProcessed(preview, message.TransactionId);
-                await repo.UpsertAsync(document, document.Version - 1, ct);
+                await repo.UpsertAsync(document, document.Version, ct);
 
                 sw.Stop();
                 logger.LogInformation(
@@ -136,7 +136,7 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
                     if (document is not null)
                     {
                         document.MarkAsFailed(ex.Message, message.TransactionId);
-                        await repo.UpsertAsync(document, document.Version - 1, ct);
+                        await repo.UpsertAsync(document, document.Version, ct);
                     }
                 }
                 catch (Exception innerEx)
@@ -154,8 +154,10 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
         private async Task<string> GeneratePreviewAsync(
             Stream stream, string contentType, CancellationToken ct)
         {
-            // For text content — read directly
-            if (contentType is "text/plain")
+            // Text-based types — read directly
+            if (contentType.StartsWith("text/") ||
+                contentType is "application/json" or "application/xml"
+                              or "application/csv" or "application/xhtml+xml")
             {
                 using var reader = new StreamReader(stream);
                 var content = await reader.ReadToEndAsync(ct);
@@ -164,11 +166,49 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
                     : content[.._maxPreviewLength] + "...";
             }
 
-            // For binary content (PDF, DOC) — describe the content type and size
-            // In production this would use a PDF extraction library like iText or PdfPig
-            var sizeKb = stream.Length / 1024;
-            return $"[{contentType}] Document preview — {sizeKb}KB file. " +
-                   $"Extraction of {contentType} requires a licensed parser in production.";
+            // Binary types (PDF, DOCX, etc.) — scan bytes for readable text runs
+            var bytes = new byte[stream.Length];
+            _ = await stream.ReadAsync(bytes, ct);
+            var extracted = ExtractReadableText(bytes, _maxPreviewLength);
+            return extracted.Length > 0
+                ? extracted
+                : $"[{contentType}] No readable text could be extracted from this document.";
+        }
+
+        // Scans raw bytes for consecutive printable-ASCII runs (length ≥ 4).
+        // Effective for PDFs (text objects are ASCII-encoded inside the binary)
+        // and any other format that embeds plain text in a binary wrapper.
+        private static string ExtractReadableText(byte[] bytes, int maxLength)
+        {
+            var result = new System.Text.StringBuilder();
+            var run   = new System.Text.StringBuilder();
+
+            foreach (var b in bytes)
+            {
+                if (b >= 32 && b < 127)
+                {
+                    run.Append((char)b);
+                }
+                else
+                {
+                    if (run.Length >= 4)
+                    {
+                        if (result.Length > 0) result.Append(' ');
+                        result.Append(run);
+                        if (result.Length >= maxLength) break;
+                    }
+                    run.Clear();
+                }
+            }
+
+            if (run.Length >= 4 && result.Length < maxLength)
+            {
+                if (result.Length > 0) result.Append(' ');
+                result.Append(run);
+            }
+
+            var text = result.ToString().Trim();
+            return text.Length <= maxLength ? text : text[..maxLength] + "...";
         }
     }
 }

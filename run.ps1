@@ -5,6 +5,12 @@ param(
     [string]$Command = "help"
 )
 
+# Ensure Docker CLI is on the PATH (Docker Desktop installs here on Windows)
+$dockerBin = "C:\Program Files\Docker\Docker\resources\bin"
+if ((Test-Path $dockerBin) -and ($env:PATH -notlike "*$dockerBin*")) {
+    $env:PATH += ";$dockerBin"
+}
+
 if ($Command -eq "run") {
     Write-Host "## Starting full stack (LocalStack + API)..." -ForegroundColor Green
     docker-compose up --build

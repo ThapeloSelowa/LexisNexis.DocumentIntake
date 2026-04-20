@@ -27,6 +27,7 @@ using Microsoft.OpenApi;
 using OpenTelemetry.Trace;
 using Serilog;
 using Serilog.Formatting.Compact;
+using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -111,6 +112,11 @@ try
     });
 
     builder.Services.AddValidatorsFromAssembly(typeof(SubmitDocumentCommandValidator).Assembly);
+
+    // Serialize enums as strings (e.g. "Processed" instead of 4, "Received" instead of 0)
+    builder.Services.ConfigureHttpJsonOptions(options =>
+        options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
     // Background worker
     builder.Services.AddHostedService<DocumentProcessingWorker>();
 
