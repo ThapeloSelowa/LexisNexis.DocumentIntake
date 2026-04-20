@@ -1,19 +1,16 @@
 ﻿using LexisNexis.DocumentIntake.BusinessLogic.Domain.Events;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
 {
     public sealed class Document
     {
-        // ── Identity ───
+        // Identity
         public DocumentId Id { get; private set; }
         public DedupKey DedupKey { get; private set; }
         public int Version { get; private set; }
         public string ETag => $"{Id}-v{Version}";
 
-        // ── Submission metadata ───
+        // Submission metadata
         public string SourceDocumentId { get; private set; }
         public string Provider { get; private set; }
         public string Title { get; private set; }
@@ -25,15 +22,15 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
         public DateTimeOffset ReceivedAt { get; private set; }
         public DateTimeOffset? UpdatedAt { get; private set; }
 
-        // ── Storage ───
+        // Storage
         public StorageKey? StorageKey { get; private set; }
 
-        // ── Processing ───────────────────────────────────────────────────────────
+        // Processing
         public ProcessingStatus Status { get; private set; }
         public string? Preview { get; private set; }
         public DateTimeOffset? ProcessedAt { get; private set; }
 
-        // ── Audit & events ───────────────────────────────────────────────────────
+        // Audit & events
         private readonly List<AuditEntry> _auditTrail = [];
         private readonly List<IDomainEvent> _domainEvents = [];
 
@@ -45,15 +42,8 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
 
 
         /// <summary>Creates a brand new document from a submission command.</summary>
-        public static Document CreateNew(
-            string sourceDocumentId,
-            string provider,
-            string title,
-            string? jurisdiction,
-            List<string> tags,
-            string contentType,
-            string fileName,
-            string? correlationId = null)
+        public static Document CreateNew(string sourceDocumentId, string provider, string title,
+            string? jurisdiction, List<string> tags, string contentType, string fileName, string? correlationId = null)
         {
             var doc = new Document
             {
@@ -77,7 +67,7 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
             return doc;
         }
 
-        // ── Behaviour methods ───
+        // Behaviour methods
         /// <summary>
         /// Called when the document is resubmitted by an upstream provider.
         /// Updates metadata and increments the submission count rather than creating a new record.
@@ -87,7 +77,9 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
             // Reset to Received so the new file goes through the full pipeline again.
             // Skip transition if already Received (immediate resubmission before first upload completed).
             if (Status != ProcessingStatus.Received)
+            {
                 TransitionTo(ProcessingStatus.Received);
+            }
             SubmissionCount++;
             UpdatedAt = DateTimeOffset.UtcNow;
             _auditTrail.Add(AuditEntry.Create(AuditEvent.Resubmitted,
@@ -147,8 +139,7 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
         /// <summary>Called by the repository on every save to prevent race conditions.</summary>
         public void IncrementVersion() => Version++;
 
-        // ── Private helpers ───────────────────────────────────────────────────────
-
+        // Private helpers
         private void TransitionTo(ProcessingStatus next)
         {
             if (!Status.CanTransitionTo(next))

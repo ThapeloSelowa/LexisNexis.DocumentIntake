@@ -21,11 +21,7 @@ jobs:
           dotnet-version: "9.x"
 
       - name: Restore dependencies
-        run: |
-          dotnet restore
-          # The API project is excluded from the Debug solution configuration in .slnx,
-          # so dotnet restore (which defaults to Debug) skips it. Restore it explicitly.
-          dotnet restore LexisNexis.DocumentIntake.Api/LexisNexis.DocumentIntake.Api.csproj
+        run: dotnet restore
 
       - name: Build (Release)
         run: dotnet build --configuration Release --no-restore

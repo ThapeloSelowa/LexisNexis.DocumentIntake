@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
+﻿namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
 {
     /// <summary>
     /// The S3 object key for a stored document.

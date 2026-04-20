@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
+﻿namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
 {
     public enum ProcessingStatus
     {
@@ -16,8 +12,7 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
 
     /// <summary>
     /// Extension that enforces valid status transitions.
-    /// A document can only move forward — never from Processed back to Queued, for example.
-    /// This prevents bugs where worker code accidentally resets a successfully processed doc.
+    /// A document can only move forward — never from Processed back to Queued
     /// </summary>
     public static class ProcessingStatusExtensions
     {
@@ -26,8 +21,10 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
             [ProcessingStatus.Received]   = [ProcessingStatus.Stored,   ProcessingStatus.Failed],
             // Received = resubmission with a new file while upload is in-flight
             [ProcessingStatus.Stored]     = [ProcessingStatus.Received, ProcessingStatus.Queued,    ProcessingStatus.Failed],
+            // 
             [ProcessingStatus.Queued]     = [ProcessingStatus.Received, ProcessingStatus.Processing, ProcessingStatus.Failed],
-            [ProcessingStatus.Processing] = [ProcessingStatus.Received, ProcessingStatus.Processed,  ProcessingStatus.Failed],
+
+            [ProcessingStatus.Processing] = [ProcessingStatus.Received, ProcessingStatus.Queued, ProcessingStatus.Processed, ProcessingStatus.Failed],
             // Resubmission resets the document so it goes through the full pipeline again
             [ProcessingStatus.Processed]  = [ProcessingStatus.Received],
             // Failed: Queued = retry existing file; Received = resubmission with new file

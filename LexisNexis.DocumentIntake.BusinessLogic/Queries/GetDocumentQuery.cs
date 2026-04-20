@@ -1,9 +1,6 @@
 ﻿using LexisNexis.DocumentIntake.BusinessLogic.Domain;
 using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LexisNexis.DocumentIntake.BusinessLogic.Queries
 {
@@ -32,6 +29,7 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Queries
         public async Task<DocumentDto?> Handle(GetDocumentQuery query, CancellationToken ct)
         {
             var doc = await repo.FindByIdAsync(query.DocumentId, ct);
+
             if (doc is null) return null;
 
             return new DocumentDto(

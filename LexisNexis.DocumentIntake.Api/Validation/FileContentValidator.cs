@@ -18,10 +18,14 @@
         public bool IsContentTypeValid(IFormFile file, string declaredContentType)
         {
             if (!MagicBytes.TryGetValue(declaredContentType, out var magic))
+            {
                 return false;  // Unknown content type
+            }
 
             if (magic.Length == 0)
+            {
                 return true;   // text/plain — no magic byte check
+            }
 
             using var stream = file.OpenReadStream();
             var header = new byte[magic.Length];

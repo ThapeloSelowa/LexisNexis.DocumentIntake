@@ -3,9 +3,6 @@ using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
 using LexisNexis.DocumentIntake.BusinessLogic.Models;
 using MediatR;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LexisNexis.DocumentIntake.BusinessLogic.Commands
 {
@@ -21,9 +18,7 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Commands
     public class SubmitDocumentCommandHandler(IDocumentRepository repo,IStorageService storage,IQueueService queue,
         IMetricsService metrics, ILogger<SubmitDocumentCommandHandler> logger): IRequestHandler<SubmitDocumentCommandRequest, SubmitDocumentResult>
     {
-        public async Task<SubmitDocumentResult> Handle(
-            SubmitDocumentCommandRequest cmd,
-            CancellationToken ct)
+        public async Task<SubmitDocumentResult> Handle(SubmitDocumentCommandRequest cmd,CancellationToken ct)
         {
             var transactionId = cmd.CorrelationId ?? Guid.NewGuid().ToString("N");
             var dedupKey = new DedupKey(cmd.Provider, cmd.SourceDocumentId);

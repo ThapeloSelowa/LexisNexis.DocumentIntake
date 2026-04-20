@@ -1,9 +1,6 @@
 ﻿using LexisNexis.DocumentIntake.BusinessLogic.Models;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LexisNexis.DocumentIntake.Infrastructure.Workers
 {

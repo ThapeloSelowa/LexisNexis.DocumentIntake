@@ -2,9 +2,6 @@
 using Amazon.CloudWatch.Model;
 using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
 using Microsoft.Extensions.Hosting;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LexisNexis.DocumentIntake.Infrastructure.Metrics
 {

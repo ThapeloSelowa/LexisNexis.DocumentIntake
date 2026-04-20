@@ -15,10 +15,7 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Storage
     /// Works with both real AWS and LocalStack — the difference is just the ServiceURL config.
     /// Uses Polly for retry + circuit breaker (configured in ResiliencePipelines).
     /// </summary>
-    public class S3StorageService(
-        IAmazonS3 s3,
-        IConfiguration config,
-        ILogger<S3StorageService> logger) : IStorageService
+    public class S3StorageService(IAmazonS3 s3,IConfiguration config,ILogger<S3StorageService> logger) : IStorageService
     {
         private readonly string _bucketName = config["AWS:BucketName"]
             ?? throw new InvalidOperationException("AWS:BucketName is not configured.");

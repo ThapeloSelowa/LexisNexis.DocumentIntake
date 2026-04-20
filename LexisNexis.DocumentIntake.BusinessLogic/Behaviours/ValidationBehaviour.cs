@@ -32,8 +32,10 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Behaviours
                 .ToList();
 
             if (failures.Count > 0)
+            {
                 throw new ValidationException(failures);
-
+            }
+                
             return await next();
         }
     }

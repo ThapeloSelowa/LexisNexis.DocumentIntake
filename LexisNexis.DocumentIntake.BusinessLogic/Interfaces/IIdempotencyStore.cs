@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LexisNexis.DocumentIntake.BusinessLogic.Interfaces
+﻿namespace LexisNexis.DocumentIntake.BusinessLogic.Interfaces
 {
     public interface IIdempotencyStore
     {

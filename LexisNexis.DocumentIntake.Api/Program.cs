@@ -1,9 +1,6 @@
 using Amazon.Runtime;
 using Amazon.S3;
-using AWS.Logger.Core;
-using AWS.Logger.SeriLog;
 using FluentValidation;
-using HealthChecks.UI.Client;
 using LexisNexis.DocumentIntake.BusinessLogic.Behaviours;
 using LexisNexis.DocumentIntake.BusinessLogic.Commands;
 using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
@@ -29,6 +26,7 @@ using Serilog;
 using Serilog.Formatting.Compact;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
     .CreateBootstrapLogger();
@@ -91,15 +89,23 @@ try
 
     // Queue — in-memory for local, SQS for production
     if (builder.Environment.IsDevelopment())
+    {
         builder.Services.AddSingleton<IQueueService, InMemoryQueueService>();
+    }
     else
+    {
         builder.Services.AddSingleton<IQueueService, SqsQueueService>();
+    }
 
-    // Metrics — no-op console locally, CloudWatch in production
+    // Metrics — locally, CloudWatch in production
     if (builder.Environment.IsDevelopment())
+    {
         builder.Services.AddSingleton<IMetricsService, NoOpMetricsService>();
+    }
     else
+    {
         builder.Services.AddSingleton<IMetricsService, CloudWatchMetricsService>();
+    }
 
     // MediatR + FluentValidation
     builder.Services.AddMediatR(cfg =>
@@ -181,6 +187,7 @@ try
         });
 
         options.DocumentFilter<LexisNexis.DocumentIntake_Api.Swagger.ApiKeySecurityFilter>();
+        options.OperationFilter<LexisNexis.DocumentIntake_Api.Swagger.IdempotencyHeaderFilter>();
     });
 
     // OpenTelemetry

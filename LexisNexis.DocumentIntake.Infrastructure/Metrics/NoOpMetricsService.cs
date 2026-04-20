@@ -1,15 +1,10 @@
 ﻿using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LexisNexis.DocumentIntake.Infrastructure.Metrics
 {
     /// <summary>
     /// Used in local development — logs metrics to the console instead of sending to CloudWatch.
-    /// When you see a log line prefixed with "METRIC |" locally,
-    /// that's what would be a CloudWatch custom metric in production.
     /// </summary>
     public class NoOpMetricsService(ILogger<NoOpMetricsService> logger) : IMetricsService
     {

@@ -1,10 +1,8 @@
 ﻿using LexisNexis.DocumentIntake.BusinessLogic.Domain;
 using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Data;
-using System.Text;
+
 
 namespace LexisNexis.DocumentIntake.Infrastructure.Persistence
 {
@@ -27,7 +25,10 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Persistence
 
         public Task<Document?> FindByDedupKeyAsync(DedupKey key, CancellationToken ct = default)
         {
-            if (!_byDedupKey.TryGetValue(key.ToString(), out var id)) return Task.FromResult<Document?>(null);
+            if (!_byDedupKey.TryGetValue(key.ToString(), out var id))
+            {
+                return Task.FromResult<Document?>(null);
+            }
             return FindByIdAsync(DocumentId.Parse(id), ct);
         }
 
@@ -54,19 +55,24 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Persistence
             }
         }
 
-        public Task<IReadOnlyList<Document>> QueryAsync(
-            DocumentQueryFilter filter, CancellationToken ct = default)
+        public Task<IReadOnlyList<Document>> QueryAsync(DocumentQueryFilter filter, CancellationToken ct = default)
         {
             var query = _byId.Values.AsQueryable();
 
             if (!string.IsNullOrEmpty(filter.Provider))
+            {
                 query = query.Where(d => d.Provider == filter.Provider);
+            }
 
             if (!string.IsNullOrEmpty(filter.Tag))
+            {
                 query = query.Where(d => d.Tags.Contains(filter.Tag));
+            }
 
             if (filter.Status.HasValue)
+            {
                 query = query.Where(d => d.Status == filter.Status.Value);
+            }
 
             var result = query
                 .OrderByDescending(d => d.ReceivedAt)

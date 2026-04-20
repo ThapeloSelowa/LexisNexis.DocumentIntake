@@ -25,12 +25,12 @@ public static class LocalStackBootstrapper
         {
             var process = Process.Start(new ProcessStartInfo
             {
-                FileName               = "docker",
-                Arguments              = "compose up localstack -d",
-                WorkingDirectory       = Path.GetDirectoryName(composeFile)!,
+                FileName = "docker",
+                Arguments = "compose up localstack -d",
+                WorkingDirectory = Path.GetDirectoryName(composeFile)!,
                 RedirectStandardOutput = true,
-                RedirectStandardError  = true,
-                UseShellExecute        = false
+                RedirectStandardError = true,
+                UseShellExecute = false
             });
 
             if (process is null)
@@ -76,7 +76,10 @@ public static class LocalStackBootstrapper
                     return;
                 }
             }
-            catch { /* not ready yet */ }
+            catch
+            {
+
+            }
 
             await Task.Delay(1000, ct);
         }

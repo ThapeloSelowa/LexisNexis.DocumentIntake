@@ -1,9 +1,6 @@
 ﻿using LexisNexis.DocumentIntake.BusinessLogic.Domain;
 using LexisNexis.DocumentIntake.BusinessLogic.Interfaces;
 using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace LexisNexis.DocumentIntake.BusinessLogic.Queries
 {
