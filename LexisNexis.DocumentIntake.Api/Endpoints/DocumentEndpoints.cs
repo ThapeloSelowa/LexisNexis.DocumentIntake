@@ -112,8 +112,13 @@ namespace LexisNexis.DocumentIntake_Api.Endpoints
         private static async Task<IResult> SubmitDocumentAsync(HttpRequest httpRequest,IMediator mediator,
                                            FileContentValidator contentValidator,CancellationToken ct)
         {
-            var form = await httpRequest.ReadFormAsync(ct);
-            var file = form.Files.GetFile("file");
+            IFormCollection form;
+            try { form = await httpRequest.ReadFormAsync(ct); }
+            catch { return Results.BadRequest(new ErrorResponse { TransactionId = httpRequest.HttpContext.Items["TransactionId"]?.ToString() ?? Guid.NewGuid().ToString("N"), Status = 400, Title = "Bad Request", Detail = "Invalid or empty multipart form data." }); }
+
+            // Swagger UI sends the field as "fileContent" (model property name);
+            // curl/code clients typically use "file". Accept both.
+            var file = form.Files.GetFile("file") ?? form.Files.GetFile("fileContent");
 
             if (file is null)
                 return Results.BadRequest(new ErrorResponse

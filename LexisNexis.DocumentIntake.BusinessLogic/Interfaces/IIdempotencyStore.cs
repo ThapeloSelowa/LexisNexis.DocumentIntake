@@ -10,6 +10,6 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Interfaces
         Task SetAsync(string key, IdempotencyEntry entry, CancellationToken ct = default);
     }
 
-    public record IdempotencyEntry(int StatusCode, object Body, DateTimeOffset CreatedAt);
+    public record IdempotencyEntry(int StatusCode, string Body, DateTimeOffset CreatedAt);
 
 }

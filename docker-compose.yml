@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   localstack:
     image: localstack/localstack:3.0
@@ -7,9 +5,10 @@ services:
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=s3
+      - SERVICES=s3          # Only S3 — we use in-memory for SQS locally
       - DEFAULT_REGION=us-east-1
       - AWS_DEFAULT_REGION=us-east-1
+      - PERSIST_DATA=false   # Fresh state on restart
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 10s
@@ -19,7 +18,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: src/LexisNexis.DocumentIntake.Api/Dockerfile
+      dockerfile: LexisNexis.DocumentIntake.Api/Dockerfile
     container_name: document-intake-api
     ports:
       - "5000:8080"
@@ -35,9 +34,3 @@ services:
       - Security__ApiKey=dev-api-key-change-in-prod
     volumes:
       - ./logs:/app/logs
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/live"]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 30s

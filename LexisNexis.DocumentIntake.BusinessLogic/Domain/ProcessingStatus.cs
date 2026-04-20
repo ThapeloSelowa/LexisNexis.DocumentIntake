@@ -23,16 +23,15 @@ namespace LexisNexis.DocumentIntake.BusinessLogic.Domain
     {
         private static readonly Dictionary<ProcessingStatus, ProcessingStatus[]> ValidTransitions = new()
         {
-            // From Received, the document can either be successfully Stored or fail
-            [ProcessingStatus.Received] = [ProcessingStatus.Stored, ProcessingStatus.Failed],
-            // From Stored, the document can be Queued for processing or fail
-            [ProcessingStatus.Stored] = [ProcessingStatus.Queued, ProcessingStatus.Failed],
-            // From Queued, the document can be Processing or fail
-            [ProcessingStatus.Queued] = [ProcessingStatus.Processing, ProcessingStatus.Failed],
-            // From Processing, the document can be Processed or fail
-            [ProcessingStatus.Processing] = [ProcessingStatus.Processed, ProcessingStatus.Failed],
-            [ProcessingStatus.Processed] = [],  // Terminal state
-            [ProcessingStatus.Failed] = [ProcessingStatus.Queued], // Retry is allowed
+            [ProcessingStatus.Received]   = [ProcessingStatus.Stored,   ProcessingStatus.Failed],
+            // Received = resubmission with a new file while upload is in-flight
+            [ProcessingStatus.Stored]     = [ProcessingStatus.Received, ProcessingStatus.Queued,    ProcessingStatus.Failed],
+            [ProcessingStatus.Queued]     = [ProcessingStatus.Received, ProcessingStatus.Processing, ProcessingStatus.Failed],
+            [ProcessingStatus.Processing] = [ProcessingStatus.Received, ProcessingStatus.Processed,  ProcessingStatus.Failed],
+            // Resubmission resets the document so it goes through the full pipeline again
+            [ProcessingStatus.Processed]  = [ProcessingStatus.Received],
+            // Failed: Queued = retry existing file; Received = resubmission with new file
+            [ProcessingStatus.Failed]     = [ProcessingStatus.Received, ProcessingStatus.Queued],
         };
 
         public static bool CanTransitionTo(this ProcessingStatus current, ProcessingStatus next) =>
