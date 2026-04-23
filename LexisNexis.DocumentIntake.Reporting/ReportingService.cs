@@ -12,10 +12,7 @@ namespace LexisNexis.DocumentIntake.Reporting
         private static readonly ProcessingStatus[] PendingStatuses =
             [ProcessingStatus.Received, ProcessingStatus.Stored, ProcessingStatus.Queued, ProcessingStatus.Processing];
 
-        public async Task<DocumentReport> GenerateAsync(
-            DateTimeOffset? from = null,
-            DateTimeOffset? to = null,
-            CancellationToken ct = default)
+        public async Task<DocumentReport> GenerateAsync(DateTimeOffset? from = null,DateTimeOffset? to = null,CancellationToken ct = default)
         {
             var filter = new DocumentQueryFilter(PageSize: int.MaxValue);
             var docs = await repo.QueryAsync(filter, ct);

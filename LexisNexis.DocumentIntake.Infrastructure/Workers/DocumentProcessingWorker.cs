@@ -5,8 +5,6 @@ using LexisNexis.DocumentIntake.BusinessLogic.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using UglyToad.PdfPig;
@@ -25,13 +23,8 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
     /// - Retry logic is handled by Polly at the S3 level — the worker itself has a simple
     ///   try/catch for application-level failures
     /// </summary>
-    public class DocumentProcessingWorker(
-        IQueueService queue,
-        IDocumentRepository repo,
-        IStorageService storage,
-        IMetricsService metrics,
-        DeadLetterService deadLetter,
-        ILogger<DocumentProcessingWorker> logger,
+    public class DocumentProcessingWorker(IQueueService queue,IDocumentRepository repo,IStorageService storage,
+        IMetricsService metrics,DeadLetterService deadLetter1,ILogger<DocumentProcessingWorker> logger,
         IConfiguration config) : BackgroundService
     {
         private readonly int _maxPreviewLength =

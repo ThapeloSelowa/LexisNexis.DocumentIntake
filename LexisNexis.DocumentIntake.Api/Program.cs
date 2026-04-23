@@ -38,8 +38,9 @@ try
     // Auto-start LocalStack in Development
     if (builder.Environment.IsDevelopment())
     {
-        await LexisNexis.DocumentIntake.Infrastructure.Startup.LocalStackBootstrapper
-            .EnsureRunningAsync();
+        await LexisNexis.DocumentIntake.Infrastructure.Startup
+                        .LocalStackBootstrapper
+                        .EnsureRunningAsync();
     }
 
     // Serilog 
@@ -70,8 +71,7 @@ try
             config.ServiceURL = awsServiceUrl;    // LocalStack
             config.ForcePathStyle = forcePathStyle;
         }
-        return new AmazonS3Client(
-            new BasicAWSCredentials("test", "test"), config);
+        return new AmazonS3Client(new BasicAWSCredentials("test", "test"), config);
     });
 
     // Application services 
@@ -79,8 +79,7 @@ try
     builder.Services.AddSingleton<IAuditService, AuditService>();
     builder.Services.AddSingleton<DeadLetterService>();
     builder.Services.AddSingleton<InMemoryIdempotencyStore>();
-    builder.Services.AddSingleton<IIdempotencyStore>(sp =>
-        sp.GetRequiredService<InMemoryIdempotencyStore>());
+    builder.Services.AddSingleton<IIdempotencyStore>(sp =>sp.GetRequiredService<InMemoryIdempotencyStore>());
     builder.Services.AddSingleton<FileContentValidator>();
     builder.Services.AddScoped<ReportingService>();
 
