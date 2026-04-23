@@ -11,13 +11,13 @@ namespace LexisNexis.DocumentIntake_Api.Middleware
     {
         public async Task InvokeAsync(HttpContext httpContext)
         {
-            if (!httpContext.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase)
-                || !httpContext.Request.Headers.TryGetValue("Idempotency-Key", out var key))
+            if (!httpContext.Request.Method.Equals("POST", StringComparison.OrdinalIgnoreCase) || !httpContext.Request.Headers.TryGetValue("Idempotency-Key", out var key))
             {
                 await next(httpContext); return;
             }
 
             var cached = await store.GetAsync(key.ToString());
+           
             if (cached is not null)
             {
                 httpContext.Response.StatusCode = cached.StatusCode;

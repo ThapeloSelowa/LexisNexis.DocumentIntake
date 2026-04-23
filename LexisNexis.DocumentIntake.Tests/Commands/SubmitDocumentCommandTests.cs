@@ -20,15 +20,13 @@ namespace LexisNexis.DocumentIntake.Tests.Commands
         private readonly IStorageService _storage = Substitute.For<IStorageService>();
         private readonly IQueueService _queue = Substitute.For<IQueueService>();
         private readonly IMetricsService _metrics = Substitute.For<IMetricsService>();
-        private readonly ILogger<SubmitDocumentCommandHandler> _logger =
-            Substitute.For<ILogger<SubmitDocumentCommandHandler>>();
+        private readonly ILogger<SubmitDocumentCommandHandler> _logger = Substitute.For<ILogger<SubmitDocumentCommandHandler>>();
 
         private readonly SubmitDocumentCommandHandler _handler;
 
         public SubmitDocumentCommandTests()
         {
-            _handler = new SubmitDocumentCommandHandler(
-                _repo, _storage, _queue, _metrics, _logger);
+            _handler = new SubmitDocumentCommandHandler( _repo, _storage, _queue, _metrics, _logger);
 
             // Default: storage always returns a valid key
             _storage.UploadAsync(Arg.Any<DocumentId>(), Arg.Any<string>(),

@@ -22,8 +22,7 @@ namespace LexisNexis.DocumentIntake_Api.Middleware
                 return;
             }
 
-            if (!ctx.Request.Headers.TryGetValue(ApiKeyHeader, out var receivedKey)
-                || receivedKey != config["Security:ApiKey"])
+            if (!ctx.Request.Headers.TryGetValue(ApiKeyHeader, out var receivedKey) || receivedKey != config["Security:ApiKey"])
             {
                 ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 await ctx.Response.WriteAsJsonAsync(new ErrorResponse
