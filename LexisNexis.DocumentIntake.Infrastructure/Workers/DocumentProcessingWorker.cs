@@ -24,7 +24,7 @@ namespace LexisNexis.DocumentIntake.Infrastructure.Workers
     ///   try/catch for application-level failures
     /// </summary>
     public class DocumentProcessingWorker(IQueueService queue,IDocumentRepository repo,IStorageService storage,
-        IMetricsService metrics,DeadLetterService deadLetter1,ILogger<DocumentProcessingWorker> logger,
+        IMetricsService metrics,DeadLetterService deadLetter,ILogger<DocumentProcessingWorker> logger,
         IConfiguration config) : BackgroundService
     {
         private readonly int _maxPreviewLength =
